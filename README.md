@@ -1,12 +1,11 @@
--- Создаем GUI элементы
 local ScreenGui = Instance.new("ScreenGui")
 local IconButton = Instance.new("ImageButton")
 local Panel = Instance.new("Frame")
-local Slider1 = Instance.new("TextButton") -- Toggle Flight
-local Slider2 = Instance.new("TextButton") -- Toggle Noclip
-local Slider3 = Instance.new("TextButton") -- Toggle Head Transparency
-local Slider4 = Instance.new("TextButton") -- Change Walk Speed
-local CloseButton = Instance.new("TextButton") -- Close Panel
+local Slider1 = Instance.new("TextButton")
+local Slider2 = Instance.new("TextButton")
+local Slider3 = Instance.new("TextButton")
+local CloseButton = Instance.new("TextButton")
+local SpeedSlider = Instance.new("TextButton")
 
 -- Настройки GUI
 ScreenGui.Name = "CustomGui"
@@ -15,7 +14,7 @@ ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 IconButton.Name = "IconButton"
 IconButton.Size = UDim2.new(0, 50, 0, 50)
 IconButton.Position = UDim2.new(0.5, -25, 0.5, -25)
-IconButton.Image = "rbxassetid://your_icon_asset_id_here" -- замените на ID вашего изображения
+IconButton.Image = "http://www.roblox.com/asset/?id=104742316583503" -- замените на ID Вашего изображения
 IconButton.Parent = ScreenGui
 
 Panel.Name = "ControlPanel"
@@ -43,17 +42,17 @@ Slider3.Position = UDim2.new(0, 0, 0, 100)
 Slider3.Text = "Toggle Head Transparency"
 Slider3.Parent = Panel
 
-Slider4.Name = "SpeedChange"
-Slider4.Size = UDim2.new(1, 0, 0, 50)
-Slider4.Position = UDim2.new(0, 0, 0, 150)
-Slider4.Text = "Change Speed (Current: " .. tostring(Humanoid.WalkSpeed) .. ")"
-Slider4.Parent = Panel
-
 CloseButton.Name = "CloseButton"
-CloseButton.Size = UDim2.new(0, 30, 0, 30)
-CloseButton.Position = UDim2.new(1, -35, 0, 5)
-CloseButton.Text = "×"
+CloseButton.Size = UDim2.new(0, 50, 0, 25)
+CloseButton.Position = UDim2.new(1, -55, 0, 0)
+CloseButton.Text = "X"
 CloseButton.Parent = Panel
+
+SpeedSlider.Name = "SpeedToggle"
+SpeedSlider.Size = UDim2.new(1, 0, 0, 50)
+SpeedSlider.Position = UDim2.new(0, 0, 0, 150)
+SpeedSlider.Text = "Change Speed"
+SpeedSlider.Parent = Panel
 
 -- Переменные для функций
 local Player = game.Players.LocalPlayer
@@ -62,7 +61,9 @@ local Humanoid = Character:WaitForChild("Humanoid")
 local Head = Character:WaitForChild("Head")
 local Flying = false
 local Noclip = false
-local originalWalkSpeed = Humanoid.WalkSpeed
+local defaultSpeed = 16 -- стандартная скорость
+local flyingSpeed = 50 -- скорость во время полета
+local isMoving = false
 
 -- Функция для включения/выключения полета
 local function toggleFlight()
@@ -71,7 +72,7 @@ local function toggleFlight()
         Humanoid.PlatformStand = true
         while Flying do
             wait()
-            Character.HumanoidRootPart.Velocity = Vector3.new(0, 50, 0) 
+            Character.HumanoidRootPart.Velocity = Vector3.new(0, flyingSpeed, 0) -- поднимает игрока
         end
     else
         Humanoid.PlatformStand = false
@@ -81,30 +82,45 @@ end
 -- Функция для включения/выключения ноклипа
 local function toggleNoclip()
     Noclip = not Noclip
-    for _, v in ipairs(Character:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.CanCollide = not Noclip
+    if Noclip then
+        for _, v in ipairs(Character:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.CanCollide = false
+            end
+        end
+    else
+        for _, v in ipairs(Character:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.CanCollide = true
+            end
         end
     end
 end
 
 -- Функция для изменения прозрачности головы
 local function toggleTransparency()
-    Head.Transparency = (Head.Transparency == 0) and 1 or 0
+    if Head.Transparency == 0 then
+        Head.Transparency = 1 -- делает голову прозрачной
+    else
+        Head.Transparency = 0 -- восстанавливает нормальную видимость
+    end
 end
 
--- Функция для изменения скорости
+-- Функция для изменения скорости игрока
 local function changeSpeed()
-    -- Устанавливаем новую скорость через пользовательский ввод, здесь вы можете добавить свою логику
-    Humanoid.WalkSpeed = (Humanoid.WalkSpeed == originalWalkSpeed) and (originalWalkSpeed * 2) or originalWalkSpeed
-    Slider4.Text = "Change Speed (Current: " .. tostring(Humanoid.WalkSpeed) .. ")"
+    if Humanoid.WalkSpeed == defaultSpeed then
+        Humanoid.WalkSpeed = 100 -- новая скорость
+    else
+        Humanoid.WalkSpeed = defaultSpeed -- восстановление стандартной скорости
+    end
 end
 
--- Обработчик нажатия на кнопку и закрытие панели
+-- Обработчик нажатия на кнопку
 IconButton.MouseButton1Click:Connect(function()
     Panel.Visible = not Panel.Visible
 end)
 
+-- Обработчик нажатия на кнопку закрытия
 CloseButton.MouseButton1Click:Connect(function()
     Panel.Visible = false
 end)
@@ -113,18 +129,16 @@ end)
 Slider1.MouseButton1Click:Connect(toggleFlight)
 Slider2.MouseButton1Click:Connect(toggleNoclip)
 Slider3.MouseButton1Click:Connect(toggleTransparency)
-Slider4.MouseButton1Click:Connect(changeSpeed)
+SpeedSlider.MouseButton1Click:Connect(changeSpeed)
 
--- Перемещение панели
-local dragging = false
-local dragStart = nil
-local startPos = nil
-
+-- Функция для перемещения панели
+local dragging, dragInput, dragStart, startPos
 Panel.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         dragging = true
         dragStart = input.Position
         startPos = Panel.Position
+        
         input.Changed:Connect(function()
             if input.UserInputState == Enum.UserInputState.End then
                 dragging = false
@@ -136,6 +150,6 @@ end)
 Panel.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
         local delta = input.Position - dragStart
-        Panel.Position = startPos + UDim2.new(0, delta.X, 0, delta.Y)
+        Panel.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
