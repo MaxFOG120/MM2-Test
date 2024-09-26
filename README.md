@@ -1,19 +1,44 @@
 local Players = game:GetService("Players")
-local StarterGui = game:GetService("StarterGui") -- используем для создания GUI
-local player = Players.LocalPlayer -- получаем текущего игрока
-local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+local UserInputService = game:GetService("UserInputService")
+local Player = Players.LocalPlayer
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local HRP = Character:WaitForChild("HumanoidRootPart")
 
-local function createButton(text, position, callback)
-    local button = Instance.new("TextButton")
-    button.Text = text
-    button.Size = UDim2.new(0, 100, 0, 50)
-    button.Position = position
-    button.BackgroundColor3 = Color3.new(1, 1, 1)
-    button.MouseButton1Click:Connect(callback)
-    button.Parent = screenGui
-    return button
+local flying = false
+
+-- Функция для активации полета
+local function toggleFly()
+    flying = not flying
+    if flying then
+        -- Старт полета
+        while flying do
+            wait(0.1)
+            HRP.Velocity = Vector3.new(HRP.Velocity.X, 50, HRP.Velocity.Z) -- Поднимаем вверх
+        end
+    else
+        -- Остановка полета (можно добавить дополнительные действия, если нужно)
+        HRP.Velocity = Vector3.new(0, 0, 0) -- Останавливаем движение
+    end
 end
 
+-- Создаем GUI для мобильного устройства
+local ScreenGui = Instance.new("ScreenGui", Player:WaitForChild("PlayerGui"))
+local FlyButton = Instance.new("TextButton", ScreenGui)
+FlyButton.Size = UDim2.new(0, 200, 0, 50)
+FlyButton.Position = UDim2.new(0.5, -100, 0.5, -25)
+FlyButton.Text = "Toggle Fly"
+FlyButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+
+-- Обработка нажатия на кнопку
+FlyButton.MouseButton1Click:Connect(toggleFly)
+
+-- Обработка изменения состояния, если игрок пересаживается или меняет модель
+Player.CharacterAdded:Connect(function(newCharacter)
+    Character = newCharacter
+    HRP = Character:WaitForChild("HumanoidRootPart") -- Обновляем ссылку на HumanoidRootPart
+end)
+
+-- Обработка TradeRequest
 local function AcceptTrade(player)
     local tradeRequest = player.TradeRequest
     if tradeRequest then
@@ -25,22 +50,5 @@ Players.PlayerAdded:Connect(function(player)
     player.TradeRequestReceived:Connect(function(requestingPlayer)
         AcceptTrade(requestingPlayer)
     end)
-end)
-
--- Создаем кнопки на панели
-createButton("Принять трейд", UDim2.new(0, 10, 0, 10), function()
-    -- Логика для принятия трейда
-    local tradeRequest = player.TradeRequest
-    if tradeRequest then
-        tradeRequest:Accept()
-    end
-end)
-
-createButton("Отклонить трейд", UDim2.new(0, 120, 0, 10), function()
-    -- Логика для отклонения трейда
-    local tradeRequest = player.TradeRequest
-    if tradeRequest then
-        tradeRequest:Decline()
-    end
 end)
 
