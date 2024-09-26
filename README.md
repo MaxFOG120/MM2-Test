@@ -14,7 +14,7 @@ ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 IconButton.Name = "IconButton"
 IconButton.Size = UDim2.new(0, 50, 0, 50)
 IconButton.Position = UDim2.new(0.5, -25, 0.5, -25)
-IconButton.Image = "rbxassetid://your_icon_asset_id_here" -- замените на ID Вашего изображения
+IconButton.Image = "rbxassetid://104742316583503" -- замените на ID Вашего изображения
 IconButton.Parent = ScreenGui
 
 Panel.Name = "ControlPanel"
